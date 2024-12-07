@@ -1,13 +1,20 @@
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_smorest import Api
+from config import Config
 
+# Инициализация приложения
 app = Flask(__name__)
+app.config.from_object(Config)
 
-# Структура данных в памяти для пользователей, категорий и записей
+# Инициализация базы данных и миграций
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+# ===== Пользователи =====
 users = {}
-categories = {}
-records = {}
 
-# Пользователи
 @app.route('/user', methods=['POST'])
 def create_user():
     data = request.json
@@ -35,7 +42,9 @@ def delete_user(user_id):
     else:
         return jsonify({"error": "User not found"}), 404
 
-# Категории
+# ===== Категории =====
+categories = {}
+
 @app.route('/category', methods=['POST'])
 def create_category():
     data = request.json
@@ -55,7 +64,9 @@ def delete_category(category_id):
     else:
         return jsonify({"error": "Category not found"}), 404
 
-# Записи о расходах
+# ===== Записи =====
+records = {}
+
 @app.route('/record', methods=['POST'])
 def create_record():
     data = request.json
@@ -63,6 +74,7 @@ def create_record():
     user_id = data["user_id"]
     category_id = data["category_id"]
     
+    # Проверка существования пользователя и категории
     if user_id not in users:
         return jsonify({"error": "User not found"}), 404
     if category_id not in categories:
@@ -109,6 +121,6 @@ def get_records():
     
     return jsonify(filtered_records)
 
+# Запуск приложения
 if __name__ == '__main__':
     app.run(debug=True)
-# Запись чисто для коммита, поскольку по какой-то причине не добавился коммит, когда я только начинал делать :(

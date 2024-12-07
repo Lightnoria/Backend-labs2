@@ -1,5 +1,10 @@
 # Backend-labs
 
+##
+- Варіант завдання
+- 26/3 = 8.66 = 8/2 остача - 2
+- 2. Користувацькі категорії витрат
+
 ### *Need installed:* 
 - python
 - flask (pip install flask)
