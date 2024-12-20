@@ -1,0 +1,25 @@
+# Python стандартные файлы
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Виртуальное окружение
+.venv/
+env/
+ENV/
+venv/
+
+# Конфигурационные файлы
+*.env
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# База данных SQLite
+*.sqlite3
+db.sqlite3
