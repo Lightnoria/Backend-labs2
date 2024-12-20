@@ -1,126 +1,71 @@
+import os
+
 from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_smorest import Api
-from config import Config
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
+from passlib.hash import pbkdf2_sha256
 
-# Инициализация приложения
+# Настройки приложения
 app = Flask(__name__)
-app.config.from_object(Config)
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "default_secret_key")  # Установите JWT ключ
+jwt = JWTManager(app)
 
-# Инициализация базы данных и миграций
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+# Модели (заглушки)
+users = {}  # Простой in-memory хранилище: username -> hashed_password
 
-# ===== Пользователи =====
-users = {}
+# ===== Аутентификация =====
+@app.route('/auth/register', methods=['POST'])
+def register():
+    user_data = request.json
+    username = user_data.get("username")
+    password = user_data.get("password")
 
-@app.route('/user', methods=['POST'])
-def create_user():
-    data = request.json
-    user_id = len(users) + 1
-    users[user_id] = {"id": user_id, "name": data["name"]}
-    return jsonify(users[user_id]), 201
-
-@app.route('/users', methods=['GET'])
-def get_users():
-    return jsonify(list(users.values()))
-
-@app.route('/user/<int:user_id>', methods=['GET'])
-def get_user(user_id):
-    user = users.get(user_id)
-    if user:
-        return jsonify(user)
-    else:
-        return jsonify({"error": "User not found"}), 404
-
-@app.route('/user/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    if user_id in users:
-        del users[user_id]
-        return jsonify({"message": "User deleted"}), 200
-    else:
-        return jsonify({"error": "User not found"}), 404
-
-# ===== Категории =====
-categories = {}
-
-@app.route('/category', methods=['POST'])
-def create_category():
-    data = request.json
-    category_id = len(categories) + 1
-    categories[category_id] = {"id": category_id, "name": data["name"]}
-    return jsonify(categories[category_id]), 201
-
-@app.route('/category', methods=['GET'])
-def get_categories():
-    return jsonify(list(categories.values()))
-
-@app.route('/category/<int:category_id>', methods=['DELETE'])
-def delete_category(category_id):
-    if category_id in categories:
-        del categories[category_id]
-        return jsonify({"message": "Category deleted"}), 200
-    else:
-        return jsonify({"error": "Category not found"}), 404
-
-# ===== Записи =====
-records = {}
-
-@app.route('/record', methods=['POST'])
-def create_record():
-    data = request.json
-    record_id = len(records) + 1
-    user_id = data["user_id"]
-    category_id = data["category_id"]
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
     
-    # Проверка существования пользователя и категории
-    if user_id not in users:
-        return jsonify({"error": "User not found"}), 404
-    if category_id not in categories:
-        return jsonify({"error": "Category not found"}), 404
-    
-    records[record_id] = {
-        "id": record_id,
-        "user_id": user_id,
-        "category_id": category_id,
-        "timestamp": data.get("timestamp"),
-        "amount": data["amount"]
-    }
-    return jsonify(records[record_id]), 201
+    if username in users:
+        return jsonify({"message": "User already exists"}), 400
 
-@app.route('/record/<int:record_id>', methods=['GET'])
-def get_record(record_id):
-    record = records.get(record_id)
-    if record:
-        return jsonify(record)
-    else:
-        return jsonify({"error": "Record not found"}), 404
+    # Хэшируем пароль
+    hashed_password = pbkdf2_sha256.hash(password)
+    users[username] = hashed_password
+    return jsonify({"message": f"User '{username}' registered successfully"}), 201
 
-@app.route('/record/<int:record_id>', methods=['DELETE'])
-def delete_record(record_id):
-    if record_id in records:
-        del records[record_id]
-        return jsonify({"message": "Record deleted"}), 200
-    else:
-        return jsonify({"error": "Record not found"}), 404
 
-@app.route('/record', methods=['GET'])
-def get_records():
-    user_id = request.args.get("user_id", type=int)
-    category_id = request.args.get("category_id", type=int)
-    
-    if user_id is None and category_id is None:
-        return jsonify({"error": "user_id or category_id parameter is required"}), 400
+@app.route('/auth/login', methods=['POST'])
+def login():
+    user_data = request.json
+    username = user_data.get("username")
+    password = user_data.get("password")
 
-    filtered_records = [
-        record for record in records.values()
-        if (user_id is None or record["user_id"] == user_id) and
-           (category_id is None or record["category_id"] == category_id)
-    ]
-    
-    return jsonify(filtered_records)
+    if not username or not password:
+        return jsonify({"message": "Username and password are required"}), 400
+
+    # Проверяем пользователя
+    if username in users and pbkdf2_sha256.verify(password, users[username]):
+        access_token = create_access_token(identity=username)
+        return jsonify({"access_token": access_token}), 200
+
+    return jsonify({"message": "Invalid username or password"}), 401
+
+
+# ===== Пример защищённого маршрута =====
+@app.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    return jsonify({"message": "Access granted!"}), 200
+
+
+# Обработчики JWT ошибок
+@jwt.unauthorized_loader
+def unauthorized_callback(callback):
+    return jsonify({"message": "Missing authorization header"}), 401
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(callback):
+    return jsonify({"message": "Invalid token"}), 401
+
 
 # Запуск приложения
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
