@@ -1,20 +1,34 @@
-# Backend-labs
-
-##
-- Варіант завдання
-- 26/3 = 8.66 = 8/2 остача - 2
-- 2. Користувацькі категорії витрат
-
-### *Need installed:* 
-- python
-- flask (pip install flask)
-
-### *Use this commands in cmd*
-- .\env\Scripts\activate
-- mkdir expense-tracker
-- cd expense-tracker
-- git clone https://github.com/Lightnoria/Backend-labs2.git
-- python app.py
 
 
-###### Поволоцький Ярослав ІО-26
+
+# Лабораторна робота №4
+#### з дисципліни "Технології серверного програмного забезпечення".
+Виконав: Поволоцький Ярослав, група ІО-26
+
+## Опис
+
+Додаток для обліку витрат з можливістю аутентифікації та управління користувачами, категоріями й записами витрат.
+
+## Вимоги до середовища
+
+- Python (версія 3.8 або новіша)
+- Flask
+- Інші залежності, зазначені в `requirements.txt`
+
+## Інсталяція
+
+1. Клонувати репозиторій:
+   ```
+   git clone https://github.com/Lightnoria/Backend-labs2.git
+   cd Backend-labs2
+2. Створити та активувати віртуальне середовище:
+   ```
+    python -m venv env
+    .\env\Scripts\activate  # для Windows
+    source env/bin/activate  # для Linux/MacOS
+3. Встановити залежності:
+   ```
+    pip install -r requirements.txt
+4. Запустити застосунок:
+   ```
+   python app.py
